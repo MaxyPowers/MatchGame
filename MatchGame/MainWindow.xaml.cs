@@ -12,16 +12,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace MatchGame
 {
-    using System.Windows.Threading;
-
     public partial class MainWindow : Window
     {
         DispatcherTimer timer = new DispatcherTimer();
-        int tenthsOfSecondsElapsed;
-        int matchesFound;
+        int tenthsOfSecondsElapsed; //Поле итератор для таймера 
+        int matchesFound; //Поле итератор для правильных комбинаций
 
         public MainWindow()
         {
@@ -31,7 +30,10 @@ namespace MatchGame
             timer.Tick += Timer_Tick;
             SetUpGame();
         }
-
+        /// <summary>
+        /// Отображает значение таймера в UI.
+        /// Останавливает таймер при обнаружении всех парных изображение.
+        /// </summary>
         private void Timer_Tick(object sender, EventArgs e)
         {
             tenthsOfSecondsElapsed++;
@@ -43,7 +45,8 @@ namespace MatchGame
             }
         }
 
-        private void SetUpGame()
+        
+        private void SetUpGame()//Устанавливает значения для отображения UI
         {
             List<string> animalEmoji = new List<string>()
             {
@@ -54,53 +57,101 @@ namespace MatchGame
                 "🐷","🐷",
                 "🐼","🐼",
                 "🐰","🐰",
-                "🦊","🦊"
-            };
+                "🦊","🦊",
+                "🐶","🐶",
+                "🦒","🦒",
+                "🐭","🐭",
+                "🐗","🐗",
+                "🐲","🐲",
+                "🦍","🦍",
+                "🦛","🦛",
+                "🦥","🦥",
+            }; //Список изображений животных
 
+            List<string> dubleAnimal = new List<string>(); //Резервный список 
+                                                           //для сохранения пары выбраного
             Random rnd = new Random();
+            //Переменная "счетчик" для подсчета количества выбраных животных
+            int itr = 0; 
 
-            foreach(TextBlock textBlock in mainGrid.Children.OfType<TextBlock>())
+            //Цикл устанавливает значения для TextBlock в UI
+            foreach (TextBlock textBlock in mainGrid.Children.OfType<TextBlock>())
             {
-                if (textBlock.Name != "timeTextBlock")
+                //Пустая строка для хранения случайно выбранного животного.
+                string nextEmoji = string.Empty;
+                if (itr != 8) 
                 {
-                    textBlock.Visibility = Visibility.Visible;
-                    int index = rnd.Next(animalEmoji.Count);
-                    string nextEmoji = animalEmoji[index];
-                    textBlock.Text = nextEmoji;
-                    animalEmoji.RemoveAt(index);
+                    //До восьми итераций, TextBlock получают свои значения из списка animalEmoji
+                    if (textBlock.Name != "timeTextBlock")
+                    {
+                        textBlock.Visibility = Visibility.Visible;
+                        int index = rnd.Next(animalEmoji.Count);
+                        nextEmoji = animalEmoji[index];
+                        textBlock.Text = nextEmoji;
+                        animalEmoji.RemoveAt(index);
+                        itr++;
+                    }
+                }
+                else
+                {
+                    //После восьми итераций, TextBlock получают свои значения из резервного списка
+                    //пар животных dubleAnimal
+                    if (textBlock.Name != "timeTextBlock")
+                    {
+                        textBlock.Visibility = Visibility.Visible;
+                        int index = rnd.Next(dubleAnimal.Count);
+                        nextEmoji = dubleAnimal[index];
+                        textBlock.Text = nextEmoji;
+                        dubleAnimal.RemoveAt(index);
+                        
+                    }
+                }
+
+                //Находит пару для выбраного эмоджи в списке animalEmoji,
+                //сохраняет её в резервный список и удаляет её из списка animalEmoji
+                for (int i = 0; i < animalEmoji.Count; i++)
+                {
+                    if (nextEmoji == animalEmoji[i])
+                    {
+                        dubleAnimal.Add(animalEmoji[i]);
+                        animalEmoji.RemoveAt(i);
+                        break;
+                    }
                 }
             }
 
-            timer.Start();
-            tenthsOfSecondsElapsed = 0;
-            matchesFound = 0;
+            timer.Start(); //Запускает таймер
+            tenthsOfSecondsElapsed = 0; //Устанавливает начальное значение таймера
+            matchesFound = 0; //Устанавливает начальное значение для количества правильных комбинаций
         }
 
-        TextBlock lastTextBlockClicked;
-        bool findingMatch = false;
+        TextBlock lastTextBlockClicked; //Резервная ссылка для хранения выбранного эмоджи
+        bool findingMatch = false; //Переменная индикатор первого нажатия на элемент TextBlock
 
+        //Собите нажатия на TextBlock
         private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
         {
             TextBlock textBlock = sender as TextBlock;
-            if (findingMatch == false)
+            if (findingMatch == false) //Если обьект не был выбран
             {
-                textBlock.Visibility = Visibility.Hidden;
-                lastTextBlockClicked = textBlock;
-                findingMatch = true;
+                textBlock.Visibility = Visibility.Hidden; //Устанавливает значение видимости "скрытый"
+                lastTextBlockClicked = textBlock; //Сохраняет выбраный эмоджи в резервную ссылку
+                findingMatch = true; //Значение индекатора сообщает о том что пользователь выбрал первый эмоджи
             }
-            else if (textBlock.Text == lastTextBlockClicked.Text)
+            else if (textBlock.Text == lastTextBlockClicked.Text) //Если второй выбраный эмоджи совпадает с первым
             {
-                matchesFound++;
-                textBlock.Visibility = Visibility.Hidden;
-                findingMatch = false;
+                matchesFound++; //Увеличивает количество правильных комбинаций
+                textBlock.Visibility = Visibility.Hidden; //Устанавливает значение видимости "скрытый"
+                findingMatch = false; //Индикатор сообщает о том что пользователь еще не выбрал элемент для сравнения
             }
             else
             {
-                lastTextBlockClicked.Visibility = Visibility.Visible;
-                findingMatch = false;
+                lastTextBlockClicked.Visibility = Visibility.Visible; //Делает видимым выбраный TextBlock
+                findingMatch = false; //Индикатор сообщает о том что пользователь еще не выбрал элемент для сравнения
             }
         }
 
+        //Начинает новую игру при нажатии на таймер
         private void timeTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (matchesFound == 8)
